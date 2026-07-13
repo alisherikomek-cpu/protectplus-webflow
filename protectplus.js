@@ -19,7 +19,7 @@
 
 document.addEventListener("DOMContentLoaded", function () {
   /* =========================
-   MOBILE MENU
+   MOBILE MENU 1
    ========================= */
   const burger = document.querySelector(".header_burger");
   const menu = document.querySelector(".mobile-menu");
