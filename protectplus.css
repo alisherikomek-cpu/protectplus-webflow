@@ -1,0 +1,491 @@
+/* =========================================================
+   Protect+ Webflow CSS
+
+   Файл для GitHub: protectplus.css
+   Важно: в этот файл НЕ вставлять теги <style> и </style>.
+
+   Что внутри:
+   - мобильное меню;
+   - состояния шапки после авторизации;
+   - формы поддержки;
+   - телефонные поля;
+   - auth modal;
+   - состояния инпутов;
+   - ошибки;
+   - logout modal.
+   ========================================================= */
+
+/* =========================
+   MOBILE MENU
+   ========================= */
+.mobile-menu {
+  display: none;
+}
+.mobile-menu.is_open {
+  display: flex;
+}
+body.is_menu_open {
+  overflow: hidden;
+}
+/* =========================
+   PLUS ICON SPIN
+   ========================= */
+@keyframes plus_spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.mobile_menu_login_svg,
+.support_plus_icon {
+  display: block !important;
+  transform-origin: center center !important;
+  transform-box: fill-box !important;
+  will-change: transform;
+}
+.menu_auth:hover .mobile_menu_login_svg,
+.menu_auth:active .mobile_menu_login_svg,
+.menu_login_plus:hover .mobile_menu_login_svg,
+.support_btn:hover .support_plus_icon,
+.support_btn:active .support_plus_icon,
+.support_plus:hover .support_plus_icon {
+  animation: plus_spin 1.6s linear infinite !important;
+}
+/* =========================
+   HEADER AUTH STATES
+   ========================= */
+.header_login_logout {
+  display: none !important;
+}
+html.pp_auth_logged_in body .header_login {
+  display: none !important;
+}
+html.pp_auth_logged_in body .header_login_logout {
+  display: flex !important;
+  align-items: center !important;
+}
+html.pp_auth_logged_out body .header_login {
+  display: flex !important;
+}
+html.pp_auth_logged_out body .header_login_logout {
+  display: none !important;
+}
+body.is_logged_in .header_login {
+  display: none !important;
+}
+body.is_logged_in .header_login_logout {
+  display: flex !important;
+  align-items: center !important;
+}
+body.ms_auth_ready:not(.is_logged_in) .header_login {
+  display: flex !important;
+}
+body.ms_auth_ready:not(.is_logged_in) .header_login_logout {
+  display: none !important;
+}
+.header_account,
+.header_logout {
+  text-decoration: none !important;
+  cursor: pointer !important;
+}
+.header_account {
+  font-size: 14px !important;
+  line-height: 120% !important;
+  font-weight: 500 !important;
+  color: #222222 !important;
+}
+.header_logout {
+  font-size: 14px !important;
+  line-height: 120% !important;
+  font-weight: 400 !important;
+  color: #555555 !important;
+}
+.header_account:hover,
+.header_logout:hover {
+  color: #2167f3 !important;
+}
+.header_divider {
+  width: 1px !important;
+  height: 18px !important;
+  background: rgba(34, 34, 34, 0.18) !important;
+  flex: 0 0 auto !important;
+}
+/* =========================
+   SUPPORT FORM
+   ========================= */
+.support_select {
+  position: absolute !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 1px !important;
+  height: 1px !important;
+}
+.custom_support_select {
+  position: relative;
+  width: 100%;
+  z-index: 20;
+  margin-bottom: 20px !important;
+}
+.custom_support_select_button {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 48px 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 4px;
+  background: #222222;
+  color: #ffffff;
+  font-size: 14px;
+  line-height: 1.2;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+  text-align: left;
+}
+.custom_support_select_button::after {
+  content: "";
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  transform: translateY(-50%);
+  background-image: url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25L7 8.75L10.5 5.25' stroke='%23FFFFFF' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 14px 14px;
+  transition: transform 0.2s ease;
+}
+.custom_support_select.is_open .custom_support_select_button::after {
+  transform: translateY(-50%) rotate(180deg);
+}
+.custom_support_select_list {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 8px);
+  padding: 8px;
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+  z-index: 50;
+  flex-direction: column;
+  gap: 4px;
+}
+.custom_support_select.is_open .custom_support_select_list {
+  display: flex !important;
+}
+.custom_support_select_option {
+  padding: 12px 12px !important;
+  border-radius: 4px;
+  color: #222222;
+  font-size: 14px;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+.custom_support_select_option:hover,
+.custom_support_select_option.is_selected {
+  background: #1f6bff;
+  color: #ffffff;
+}
+.support_group_free {
+  display: none;
+}
+.support_group_free.is_active {
+  display: flex;
+}
+.support_group_certificate.is_hidden {
+  display: none;
+}
+.support_checkbox,
+.support_checkbox_wrap {
+  cursor: pointer;
+}
+.support_checkbox_wrap {
+  display: flex !important;
+  align-items: center !important;
+}
+.support_checkbox_text {
+  display: block !important;
+  transform: translateY(-1px);
+}
+.support_checkbox_error {
+  display: none;
+  margin-top: 8px;
+  color: #ff6b6b;
+  font-size: 13px;
+  line-height: 1.3;
+}
+.support_checkbox_error.is_visible {
+  display: block;
+}
+.support_input_certificate.is_filled,
+.support_input_name.is_filled,
+.support_input_phone.is_filled,
+.support_input_email.is_filled,
+.support_textarea.is_filled {
+  border-color: rgba(255, 255, 255, 0.85) !important;
+  background-color: #222222 !important;
+  color: #ffffff !important;
+}
+.support_input_certificate.is_filled::placeholder,
+.support_input_name.is_filled::placeholder,
+.support_input_phone.is_filled::placeholder,
+.support_input_email.is_filled::placeholder,
+.support_textarea.is_filled::placeholder {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+.support_form_block .w-form-done,
+.support_form_block .w-form-fail {
+  display: none !important;
+}
+/* =========================
+   SUPPORT PHONE FIELD
+   ========================= */
+.iti {
+  width: 100% !important;
+  display: block !important;
+}
+.iti .support_input_phone {
+  width: 100% !important;
+  padding-left: 48px !important;
+}
+.iti__flag-container {
+  left: 16px !important;
+  pointer-events: none !important;
+}
+.iti__selected-flag {
+  padding: 0 !important;
+  background: transparent !important;
+}
+.iti__arrow {
+  display: none !important;
+}
+.phone_input_error {
+  display: none;
+  margin-top: 8px;
+  color: #ff6b6b;
+  font-size: 13px;
+  line-height: 1.3;
+}
+.phone_input_error.is_visible {
+  display: block;
+}
+.support_form_block .iti {
+  margin-bottom: 20px !important;
+}
+.support_form_block .phone_input_error {
+  margin-bottom: 20px !important;
+}
+/* =========================
+   SUPPORT RESULT MODALS
+   ========================= */
+.custom_success_modal,
+.custom_error_modal {
+  display: none !important;
+}
+.custom_success_modal.is_open,
+.custom_error_modal.is_open {
+  display: flex !important;
+}
+body.is_modal_open {
+  overflow: hidden;
+}
+/* =========================
+   AUTH MODAL
+   ========================= */
+.auth_modal {
+  display: none !important;
+}
+.auth_modal.is_open {
+  display: flex !important;
+}
+.auth_screen {
+  display: none !important;
+}
+.auth_screen.is_active {
+  display: block !important;
+}
+body.is_auth_open {
+  overflow: hidden;
+}
+.auth_modal .w-form-done,
+.auth_modal .w-form-fail {
+  display: none !important;
+}
+/* =========================
+   AUTH INPUT STATES
+   ========================= */
+.auth_input {
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    color 0.18s ease !important;
+  background-color: #ffffff !important;
+  color: #222222 !important;
+  box-shadow: none !important;
+}
+.auth_input::placeholder {
+  color: #c9c9c9 !important;
+  opacity: 1 !important;
+}
+.auth_input:focus {
+  border-color: #222222 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background-color: #ffffff !important;
+  color: #222222 !important;
+}
+.auth_input.is_filled:not(.is_error),
+.auth_input:not(:placeholder-shown):not(.is_error) {
+  border-color: #222222 !important;
+  box-shadow: none !important;
+  background-color: #ffffff !important;
+  color: #222222 !important;
+}
+.auth_input.is_filled:focus:not(.is_error),
+.auth_input:not(:placeholder-shown):focus:not(.is_error) {
+  border-color: #222222 !important;
+  box-shadow: none !important;
+  background-color: #ffffff !important;
+  color: #222222 !important;
+}
+.auth_input:-webkit-autofill,
+.auth_input:-webkit-autofill:hover,
+.auth_input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #222222 !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  border-color: #222222 !important;
+}
+.auth_input.is_error {
+  border-color: #ff3333 !important;
+  box-shadow: none !important;
+  background-color: #ffffff !important;
+  color: #222222 !important;
+}
+/* =========================
+   AUTH ERROR BLOCKS
+   ========================= */
+.auth_error {
+  display: none !important;
+  margin-top: 8px !important;
+  align-items: center !important;
+  gap: 6px !important;
+  color: #ff3333 !important;
+}
+.auth_error.is_visible {
+  display: flex !important;
+}
+.auth_error_icon {
+  flex: 0 0 auto;
+}
+.auth_error .auth_error_text {
+  display: block !important;
+  color: #ff3333 !important;
+  font-size: 13px !important;
+  line-height: 130% !important;
+  font-weight: 400 !important;
+}
+.auth_field > .auth_error_text {
+  display: none !important;
+  margin-top: 8px !important;
+  color: #ff3333 !important;
+  font-size: 13px !important;
+  line-height: 130% !important;
+  font-weight: 400 !important;
+}
+.auth_field > .auth_error_text.is_visible {
+  display: block !important;
+}
+/* =========================
+   REGISTRATION CODE TIMER
+   ========================= */
+.auth_register_code .auth_code_timer {
+  display: none !important;
+}
+.auth_register_code .auth_code_timer.is_visible {
+  display: block !important;
+}
+.auth_register_code .auth_code_timer.is_hidden {
+  display: none !important;
+}
+.auth_register_code .auth_button_resend.is_hidden {
+  display: none !important;
+}
+.auth_register_code .auth_button_resend.is_visible {
+  display: flex !important;
+}
+/* =========================
+   RESET CODE TIMER
+   ========================= */
+.auth_reset_code .auth_code_timer_phone {
+  display: block !important;
+}
+.auth_reset_code .auth_code_timer_phone.is_hidden {
+  display: none !important;
+}
+.auth_reset_code .auth_button_resend_code {
+  display: none !important;
+}
+.auth_reset_code .auth_button_resend_code.is_visible {
+  display: flex !important;
+}
+/* =========================
+   LOGOUT MODAL
+   ========================= */
+.logout_modal {
+  display: none !important;
+}
+.logout_modal.is_open {
+  display: flex !important;
+}
+.logout_backdrop {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+body.is_logout_open {
+  overflow: hidden;
+}
+/* =========================
+   HIDDEN MEMBERSTACK LOGIN SUBMIT
+   ========================= */
+.auth_login_native_submit {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
+}
+/* =========================
+   RUNTIME AUTH ERRORS
+   ========================= */
+.auth_runtime_error {
+  width: 100% !important;
+}
+.auth_input.isError {
+  border-color: #ff3333 !important;
+  box-shadow: none !important;
+  background-color: #ffffff !important;
+  color: #222222 !important;
+}
+.auth_code_error_runtime {
+  display: none !important;
+  margin-top: 8px !important;
+  color: #ff3333 !important;
+  font-size: 13px !important;
+  line-height: 130% !important;
+  font-weight: 400 !important;
+}
+.auth_code_error_runtime.is_visible {
+  display: flex !important;
+}
