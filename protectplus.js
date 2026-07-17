@@ -201,7 +201,17 @@ document.addEventListener("DOMContentLoaded", function () {
   };
   /* =========================
    SUPPORT FORM LOGIC
+
+   ВАЖНО:
+   - .support_form_block (форма на главной) отправляется напрямую в Make;
+   - .support_form_email (страница поддержки) остаётся нативной формой Webflow
+     и отправляется только в Webflow / Email notifications.
+
+   После установки этого кода общий Webflow Webhook нужно удалить,
+   иначе Webflow продолжит слать в Make все формы сайта.
    ========================= */
+  const MAKE_MAIN_FORM_URL = "https://hook.eu1.make.com/efsph9tvluosjytr7gd5qw1eyix4g786";
+
   const supportFormBlocks = document.querySelectorAll(
     ".support_form_block, .support_form_email",
   );
@@ -292,6 +302,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const checkbox = formBlock.querySelector(".support_checkbox");
     const webflowSuccess = formBlock.querySelector(".w-form-done");
     const webflowError = formBlock.querySelector(".w-form-fail");
+    const isMainMakeForm = formBlock.classList.contains("support_form_block");
+    const isEmailOnlyForm = formBlock.classList.contains("support_form_email");
     if (!form) return;
     let checkboxError = formBlock.querySelector(".support_checkbox_error");
     let customButton = null;
@@ -501,28 +513,222 @@ document.addEventListener("DOMContentLoaded", function () {
         shouldResetOnModalClose = false;
       }
     });
+
+    function getMainFormPhoneDigits(value) {
+      let digits = String(value || "").replace(/\D/g, "");
+
+      if (
+        digits.length > 10 &&
+        (digits.charAt(0) === "7" || digits.charAt(0) === "8")
+      ) {
+        digits = digits.slice(1);
+      }
+
+      return digits.slice(0, 10);
+    }
+
+    function validateMainMakeForm() {
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return false;
+      }
+
+      const phoneInput = form.querySelector(".support_input_phone");
+
+      if (phoneInput && !phoneInput.disabled) {
+        const phoneDigits = getMainFormPhoneDigits(phoneInput.value);
+
+        if (phoneDigits.length !== 10) {
+          const itiWrap = phoneInput.closest(".iti") || phoneInput;
+          let phoneError = itiWrap.parentElement
+            ? itiWrap.parentElement.querySelector(".phone_input_error")
+            : null;
+
+          if (!phoneError) {
+            phoneError = document.createElement("div");
+            phoneError.className = "phone_input_error";
+            phoneError.textContent =
+              "Введите номер телефона полностью: +7 (777) 777-77-77";
+            itiWrap.insertAdjacentElement("afterend", phoneError);
+          }
+
+          phoneError.classList.add("is_visible");
+          phoneInput.focus();
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    function collectMainFormData() {
+      const result = {};
+      const formData = new FormData(form);
+
+      formData.forEach(function (value, key) {
+        if (key === "cf-turnstile-response") return;
+        result[key] = value;
+      });
+
+      const phoneInput = form.querySelector(".support_input_phone");
+
+      if (phoneInput && !phoneInput.disabled) {
+        const localDigits = getMainFormPhoneDigits(phoneInput.value);
+        result.phone = phoneInput.value || result.phone || "";
+        result.phone_e164 = localDigits ? "+7" + localDigits : "";
+      }
+
+      return result;
+    }
+
+    function setMainFormSubmitting(isSubmitting) {
+      const submitButton = form.querySelector('[type="submit"]');
+      if (!submitButton) return;
+
+      if (isSubmitting) {
+        submitButton.dataset.originalValue =
+          submitButton.value || submitButton.textContent || "Отправить";
+        submitButton.disabled = true;
+
+        if ("value" in submitButton) {
+          submitButton.value = submitButton.dataset.wait || "Отправляем...";
+        } else {
+          submitButton.textContent = submitButton.dataset.wait || "Отправляем...";
+        }
+      } else {
+        submitButton.disabled = false;
+        const originalValue = submitButton.dataset.originalValue || "Отправить";
+
+        if ("value" in submitButton) {
+          submitButton.value = originalValue;
+        } else {
+          submitButton.textContent = originalValue;
+        }
+      }
+    }
+
+    function submitMainFormToMake() {
+      if (
+        !MAKE_MAIN_FORM_URL ||
+        MAKE_MAIN_FORM_URL === "PASTE_MAKE_WEBHOOK_URL_HERE"
+      ) {
+        console.error("MAKE_MAIN_FORM_URL is not configured");
+        openSupportModal(errorModal);
+        return;
+      }
+
+      if (!validateMainMakeForm()) return;
+
+      const data = collectMainFormData();
+      const formName =
+        form.getAttribute("data-name") ||
+        form.getAttribute("name") ||
+        "Support Form Block";
+
+      const requestBody = {
+        triggerType: "form_submission",
+        payload: {
+          name: formName,
+          pageId: form.getAttribute("data-wf-page-id") || "",
+          formElementId: form.getAttribute("data-wf-element-id") || "",
+          submittedAt: new Date().toISOString(),
+          pageUrl: window.location.href,
+          source: "protectplus_main_form_direct",
+          data: data,
+        },
+
+        /* Дублируем основные поля верхним уровнем для удобного маппинга в Make. */
+        form_name: formName,
+        name: data.name || data.Name || "",
+        phone:
+          data.phone_e164 ||
+          data.phone ||
+          data.Phone ||
+          "",
+        message: data.message || data.Message || "",
+        email: data.email || data.Email || "",
+      };
+
+      setMainFormSubmitting(true);
+
+      fetch(MAKE_MAIN_FORM_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      })
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("Make webhook HTTP " + response.status);
+          }
+
+          return response.text();
+        })
+        .then(function () {
+          shouldResetOnModalClose = true;
+          openSupportModal(successModal);
+        })
+        .catch(function (error) {
+          console.error("Main form Make error:", error);
+          openSupportModal(errorModal);
+        })
+        .finally(function () {
+          setMainFormSubmitting(false);
+        });
+    }
+
     form.addEventListener(
       "submit",
       function (event) {
         if (checkbox && !checkbox.classList.contains("is_active")) {
           event.preventDefault();
+
           if (event.stopImmediatePropagation) {
             event.stopImmediatePropagation();
           }
+
           if (checkboxError) checkboxError.classList.add("is_visible");
-          checkboxWrap.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
+
+          if (checkboxWrap) {
+            checkboxWrap.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          }
+
           return false;
         }
-        waitingForResult = true;
-        setTimeout(checkResult, 300);
-        setTimeout(checkResult, 700);
-        setTimeout(checkResult, 1200);
-        setTimeout(checkResult, 2000);
-        setTimeout(checkResult, 3200);
-        setTimeout(checkResult, 5000);
+
+        /*
+          Главная форма: полностью отменяем нативную отправку Webflow
+          и отправляем её напрямую в Make.
+        */
+        if (isMainMakeForm) {
+          event.preventDefault();
+          event.stopPropagation();
+
+          if (event.stopImmediatePropagation) {
+            event.stopImmediatePropagation();
+          }
+
+          submitMainFormToMake();
+          return false;
+        }
+
+        /*
+          Форма поддержки: ничего не отправляем в Make из JS.
+          Её штатно обрабатывает Webflow, сохраняя заявку и отправляя email.
+        */
+        if (isEmailOnlyForm) {
+          waitingForResult = true;
+          setTimeout(checkResult, 300);
+          setTimeout(checkResult, 700);
+          setTimeout(checkResult, 1200);
+          setTimeout(checkResult, 2000);
+          setTimeout(checkResult, 3200);
+          setTimeout(checkResult, 5000);
+        }
       },
       true,
     );
