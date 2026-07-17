@@ -280,14 +280,34 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
     function setGroupEnabled(group, enabled) {
-      if (!group) return;
-      group
-        .querySelectorAll("input, textarea, select")
-        .forEach(function (field) {
-          field.disabled = !enabled;
-          field.required = enabled && field.dataset.requiredInitial === "true";
-        });
-    }
+  if (!group) return;
+
+  group
+    .querySelectorAll("input, textarea, select")
+    .forEach(function (field) {
+      field.disabled = !enabled;
+      field.required =
+        enabled && field.dataset.requiredInitial === "true";
+    });
+
+  /*
+    Когда блок отключается, убираем оставшиеся ошибки телефона.
+  */
+  if (!enabled) {
+    group
+      .querySelectorAll(".phone_input_error")
+      .forEach(function (error) {
+        error.classList.remove("is_visible");
+      });
+
+    group
+      .querySelectorAll(".support_input_phone")
+      .forEach(function (phoneInput) {
+        phoneInput.classList.remove("is_error");
+      });
+  }
+}
+
     function updateFields() {
       if (!nativeSelect || !certificateGroup || !freeGroup) return;
       const selectedOption = nativeSelect.options[nativeSelect.selectedIndex];
@@ -661,25 +681,43 @@ document.addEventListener("DOMContentLoaded", function () {
         updatePhone(input);
       });
       if (form) {
-        form.addEventListener(
-          "submit",
-          function (event) {
-            const isValid = validatePhone(input);
-            if (!isValid) {
-              event.preventDefault();
-              event.stopPropagation();
-              if (event.stopImmediatePropagation) {
-                event.stopImmediatePropagation();
-              }
-              return false;
-            }
-            if (hidden) {
-              hidden.value = "7" + getLocalDigits(input.value);
-            }
-          },
-          true,
-        );
+  form.addEventListener(
+    "submit",
+    function (event) {
+      /*
+        Если поле телефона отключено, значит сейчас выбрана
+        тема с сертификатом, и телефон проверять не нужно.
+      */
+      if (input.disabled) {
+        hidePhoneError(input);
+
+        if (hidden) {
+          hidden.value = "";
+        }
+
+        return;
       }
+
+      const isValid = validatePhone(input);
+
+      if (!isValid) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (event.stopImmediatePropagation) {
+          event.stopImmediatePropagation();
+        }
+
+        return false;
+      }
+
+      if (hidden) {
+        hidden.value = "7" + getLocalDigits(input.value);
+      }
+    },
+    true,
+  );
+}
     }
     function initAll() {
       document.querySelectorAll(".support_input_phone").forEach(initOne);
