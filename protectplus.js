@@ -329,7 +329,15 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     function initCustomSelect() {
       if (!nativeSelect) return;
-      if (formBlock.querySelector(".custom_support_select")) return;
+      /*
+        На странице мог остаться старый или пустой кастомный select.
+        Удаляем его и каждый раз собираем элемент заново.
+      */
+      formBlock
+        .querySelectorAll(".custom_support_select")
+        .forEach(function (existingSelect) {
+          existingSelect.remove();
+        });
       const customSelect = document.createElement("div");
       customSelect.className = "custom_support_select";
       customButton = document.createElement("button");
