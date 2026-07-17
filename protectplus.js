@@ -17,6 +17,31 @@
    - дополнительный hardfix для ошибки кода регистрации.
    ========================================================= */
 
+/* =========================================================
+   TEMPORARY: HIDE LOGIN BUTTONS
+
+   Скрывает кнопку «Войти в личный кабинет» в шапке
+   и аналогичные кнопки в мобильном меню.
+
+   Чтобы вернуть кнопки позже, удалите этот блок целиком.
+   ========================================================= */
+(function temporarilyHideLoginButtons() {
+  if (document.getElementById("protectplus-temporary-hide-login")) return;
+
+  const style = document.createElement("style");
+  style.id = "protectplus-temporary-hide-login";
+  style.textContent = `
+    .header_login,
+    .header_login-guest,
+    .menu_auth,
+    .mobile_menu_login {
+      display: none !important;
+    }
+  `;
+
+  (document.head || document.documentElement).appendChild(style);
+})();
+
 document.addEventListener("DOMContentLoaded", function () {
   /* =========================
    MOBILE MENU 1
@@ -177,7 +202,9 @@ document.addEventListener("DOMContentLoaded", function () {
   /* =========================
    SUPPORT FORM LOGIC
    ========================= */
-  const supportFormBlocks = document.querySelectorAll(".support_form_block");
+  const supportFormBlocks = document.querySelectorAll(
+    ".support_form_block, .support_form_email",
+  );
   const successModal = document.querySelector(".custom_success_modal");
   const errorModal = document.querySelector(".custom_error_modal");
   const modalCloseButtons = document.querySelectorAll(".custom_modal_close");
