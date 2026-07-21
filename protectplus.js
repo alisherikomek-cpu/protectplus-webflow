@@ -327,6 +327,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (!field) return;
 
+        /*
+          В письмо и Webflow submission попадают только поля
+          активного варианта формы.
+
+          Неактивные поля не удаляем из интерфейса, а временно
+          исключаем из отправки: disabled + без name/data-name.
+        */
+        field.dataset.supportFieldName = fieldName;
+
+        if (field.disabled) {
+          field.removeAttribute("name");
+          field.removeAttribute("data-name");
+          return;
+        }
+
         field.name = fieldName;
         field.setAttribute("data-name", fieldName);
       });
