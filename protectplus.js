@@ -292,7 +292,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const checkbox = formBlock.querySelector(".support_checkbox");
     const webflowSuccess = formBlock.querySelector(".w-form-done");
     const webflowError = formBlock.querySelector(".w-form-fail");
-    const isMainTelegramForm = formBlock.classList.contains("support_form_block");
     const isSupportEmailForm = formBlock.classList.contains("support_form_email");
     if (!form) return;
     let checkboxError = formBlock.querySelector(".support_checkbox_error");
@@ -302,118 +301,60 @@ document.addEventListener("DOMContentLoaded", function () {
     let shouldResetOnModalClose = false;
 
     /*
-      Webflow отправляет общий webhook для всех форм сайта.
-      Поэтому каждая форма получает явный маршрут:
-      - telegram — пропускаем дальше к Telegram в Make;
-      - email_only — останавливаем в Make до Telegram.
+      Форма поддержки остаётся обычной Webflow-формой и отправляется на email.
+      В Make она блокируется по имени формы: Support Form Email.
+
+      Здесь мы:
+      - удаляем технические скрытые поля прошлой версии;
+      - задаём понятные русские названия полей для письма;
+      - не добавляем phone_e164 в email-форму.
     */
-    function getHiddenField(name) {
-      return Array.from(form.querySelectorAll('input[type="hidden"]')).find(
-        function (field) {
-          return field.name === name;
-        },
-      );
-    }
-
-    function setHiddenField(name, value) {
-      let field = getHiddenField(name);
-
-      if (!field) {
-        field = document.createElement("input");
-        field.type = "hidden";
-        field.name = name;
-        field.setAttribute("data-name", name);
-        form.appendChild(field);
-      }
-
-      field.value = String(value == null ? "" : value);
-      field.defaultValue = field.value;
-      return field;
-    }
-
-    function syncFormRoute() {
-      if (isMainTelegramForm) {
-        setHiddenField("telegram_route", "telegram");
-        setHiddenField("form_source", "main_page");
-        return;
-      }
-
-      if (isSupportEmailForm) {
-        setHiddenField("telegram_route", "email_only");
-        setHiddenField("form_source", "support_page");
-      }
-    }
-
-    function getSupportValue(selector) {
-      const field = form.querySelector(selector);
-      return field && !field.disabled ? String(field.value || "").trim() : "";
-    }
-
-    /*
-      У формы поддержки два режима, но это одна Webflow-форма.
-      Создаём единый набор скрытых полей, чтобы письмо всегда содержало
-      данные именно активного режима, а не теряло отключённые поля.
-    */
-    function syncSupportEmailPayload() {
+    function prepareSupportEmailFormFields() {
       if (!isSupportEmailForm) return;
 
-      const selectedTopic = nativeSelect
-        ? String(nativeSelect.value || "").trim()
-        : "";
-      const isFreeQuestion = selectedTopic
-        .toLowerCase()
-        .includes("свободный вопрос");
+      const fieldNames = [
+        [".support_select", "Тема обращения"],
+        [".support_input_certificate", "Номер сертификата"],
+        [".support_textarea", "Сообщение"],
+        [".support_input_name", "Имя"],
+        [".support_input_phone", "Телефон"],
+        [".support_input_email", "Электронная почта"],
+      ];
 
-      const certificate = isFreeQuestion
-        ? ""
-        : getSupportValue(".support_input_certificate");
-      const certificateMessage = isFreeQuestion
-        ? ""
-        : getSupportValue(".support_textarea");
-      const name = isFreeQuestion
-        ? getSupportValue(".support_input_name")
-        : "";
-      const phoneInput = form.querySelector(".support_input_phone");
-      const phone =
-        isFreeQuestion && phoneInput && !phoneInput.disabled
-          ? String(
-              phoneInput.dataset.phoneE164 ||
-                phoneInput.value ||
-                "",
-            ).trim()
-          : "";
-      const email = isFreeQuestion
-        ? getSupportValue(".support_input_email")
-        : "";
+      fieldNames.forEach(function (item) {
+        const field = form.querySelector(item[0]);
+        const fieldName = item[1];
 
-      const mode = isFreeQuestion
-        ? "Свободный вопрос"
-        : "Обращение по сертификату";
+        if (!field) return;
 
-      setHiddenField("request_mode", mode);
-      setHiddenField("request_topic", selectedTopic || "—");
-      setHiddenField("request_certificate", certificate || "—");
-      setHiddenField("request_message", certificateMessage || "—");
-      setHiddenField("request_name", name || "—");
-      setHiddenField("request_phone", phone || "—");
-      setHiddenField("request_email", email || "—");
+        field.name = fieldName;
+        field.setAttribute("data-name", fieldName);
+      });
 
-      const summary = isFreeQuestion
-        ? [
-            "Тип: Свободный вопрос",
-            "Тема: " + (selectedTopic || "—"),
-            "Имя: " + (name || "—"),
-            "Телефон: " + (phone || "—"),
-            "Email: " + (email || "—"),
-          ].join(" | ")
-        : [
-            "Тип: Обращение по сертификату",
-            "Тема: " + (selectedTopic || "—"),
-            "Номер сертификата: " + (certificate || "—"),
-            "Сообщение: " + (certificateMessage || "—"),
-          ].join(" | ");
+      const technicalFieldNames = [
+        "telegram_route",
+        "form_source",
+        "request_mode",
+        "request_topic",
+        "request_certificate",
+        "request_message",
+        "request_name",
+        "request_phone",
+        "request_email",
+        "request_summary",
+      ];
 
-      setHiddenField("request_summary", summary);
+      form.querySelectorAll('input[type="hidden"]').forEach(function (field) {
+        if (technicalFieldNames.includes(field.name)) {
+          field.remove();
+        }
+      });
+
+      form
+        .querySelectorAll('input[type="hidden"][name="phone_e164"]')
+        .forEach(function (field) {
+          field.remove();
+        });
     }
 
     function saveInitialRequiredState(group) {
@@ -580,8 +521,7 @@ document.addEventListener("DOMContentLoaded", function () {
       syncCustomSelect();
       restoreFormVisible();
       updateAllSupportFilledStates();
-      syncFormRoute();
-      syncSupportEmailPayload();
+      prepareSupportEmailFormFields();
     }
     function isElementShownByWebflow(element) {
       if (!element) return false;
@@ -624,8 +564,8 @@ document.addEventListener("DOMContentLoaded", function () {
     form.addEventListener(
       "submit",
       function (event) {
-        syncFormRoute();
-        syncSupportEmailPayload();
+        updateFields();
+        prepareSupportEmailFormFields();
 
         if (checkbox && !checkbox.classList.contains("is_active")) {
           event.preventDefault();
@@ -667,12 +607,11 @@ document.addEventListener("DOMContentLoaded", function () {
     if (nativeSelect) {
       nativeSelect.addEventListener("change", function () {
         updateFields();
-        syncSupportEmailPayload();
+        prepareSupportEmailFormFields();
       });
     }
     updateFields();
-    syncFormRoute();
-    syncSupportEmailPayload();
+    prepareSupportEmailFormFields();
   });
   updateAllSupportFilledStates();
   (function () {
@@ -809,15 +748,28 @@ document.addEventListener("DOMContentLoaded", function () {
       input.setAttribute("maxlength", "18");
       hardBlockNonDigits(input);
       const form = input.form;
+      const isSupportEmailForm = Boolean(
+        form && form.closest(".support_form_email"),
+      );
       let hidden = null;
-      if (form) {
+
+      if (form && !isSupportEmailForm) {
         hidden = form.querySelector('input[name="phone_e164"]');
+
         if (!hidden) {
           hidden = document.createElement("input");
           hidden.type = "hidden";
           hidden.name = "phone_e164";
           form.appendChild(hidden);
         }
+      }
+
+      if (form && isSupportEmailForm) {
+        form
+          .querySelectorAll('input[type="hidden"][name="phone_e164"]')
+          .forEach(function (field) {
+            field.remove();
+          });
       }
       if (typeof window.intlTelInput === "function") {
         window.intlTelInput(input, {
