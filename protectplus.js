@@ -322,14 +322,53 @@ document.addEventListener("DOMContentLoaded", function () {
       ];
 
       fieldNames.forEach(function (item) {
-        const field = form.querySelector(item[0]);
+        const selector = item[0];
         const fieldName = item[1];
 
-        if (!field) return;
-
-        field.name = fieldName;
-        field.setAttribute("data-name", fieldName);
+        /*
+          В форме поддержки два поля с классом .support_textarea:
+          одно для обращения по сертификату, второе для свободного вопроса.
+          Поэтому обрабатываем все найденные поля, а не только первое.
+        */
+        form.querySelectorAll(selector).forEach(function (field) {
+          field.name = fieldName;
+          field.setAttribute("data-name", fieldName);
+        });
       });
+
+      /*
+        У двух полей сообщения в Webflow оказался одинаковый id="message".
+        Делаем id уникальными, чтобы label и браузер не путали поля.
+      */
+      const certificateMessage = form.querySelector(
+        ".support_group_certificate .support_textarea",
+      );
+      const freeMessage = form.querySelector(
+        ".support_group_free .support_textarea",
+      );
+
+      if (certificateMessage) {
+        certificateMessage.id = "support-certificate-message";
+        const certificateMessageLabel = certificateGroup
+          ? certificateGroup.querySelector('label[for="message"]')
+          : null;
+        if (certificateMessageLabel) {
+          certificateMessageLabel.setAttribute(
+            "for",
+            "support-certificate-message",
+          );
+        }
+      }
+
+      if (freeMessage) {
+        freeMessage.id = "support-free-message";
+        const freeMessageLabel = freeGroup
+          ? freeGroup.querySelector('label[for="message"]')
+          : null;
+        if (freeMessageLabel) {
+          freeMessageLabel.setAttribute("for", "support-free-message");
+        }
+      }
 
       const technicalFieldNames = [
         "telegram_route",
